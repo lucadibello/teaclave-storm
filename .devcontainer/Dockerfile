@@ -94,7 +94,7 @@ RUN chown -R "${REMOTE_USER}:${GROUP_NAME}" /root
 RUN mkdir -p /var/run/sshd \
     && ssh-keygen -A \
     && sed -i 's/^#\?Port .*/Port 2222/' /etc/ssh/sshd_config \
-    && sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config \
     && sed -i 's/^#\?PubkeyAuthentication .*/PubkeyAuthentication no/' /etc/ssh/sshd_config \
     && sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config \
     && sed -i 's/^#\?UsePAM .*/UsePAM yes/' /etc/ssh/sshd_config \

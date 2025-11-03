@@ -20,6 +20,15 @@ ARG NODE_ARCH=x64
 ARG STORM_VERSION=2.8.2
 ARG APACHE_MIRROR=https://dlcdn.apache.org/storm
 
+ENV DEBIAN_FRONTEND=noninteractive \
+    NVIM_LISTEN_ADDRESS=127.0.0.1:6666 \
+    DEVCONTAINER_USER=${REMOTE_USER} \
+    REMOTE_USER=${REMOTE_USER} \
+    REMOTE_HOME=${REMOTE_HOME} \
+    GIT_NAME=${GIT_NAME} \
+    GIT_EMAIL=${GIT_EMAIL} \
+    STORM_HOME=/opt/storm
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends software-properties-common \
     && add-apt-repository universe \

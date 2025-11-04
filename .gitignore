@@ -22,12 +22,6 @@ replay_pid*
 mvnw
 mvnw.cmd
 
-# Gradle
-.gradle/
-gradle/
-gradlew
-gradlew.bat
-
 # IDE files
 .idea/
 *.iml

@@ -135,7 +135,7 @@ RUN set -eux; \
   url="https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"; \
   curl -fsSL "$url" -o /tmp/maven.tar.gz; \
   tar -xzf /tmp/maven.tar.gz -C /opt; \
-  ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven; \
+  ln -s /opt/apache-maven-${MAVEN_VERSION}/bin/mvn /usr/local/bin/mvn; \
   echo "Maven ${MAVEN_VERSION} installed successfully."; \
 
 # lazygit (binary release)

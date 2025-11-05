@@ -118,8 +118,8 @@ RUN set -eux; \
   url="https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${GRAALVM_VERSION}/graalvm-ce-java17-linux-${GRAALVM_ARCH}-${GRAALVM_VERSION}.tar.gz"; \
   curl -fsSL -o /tmp/graalvm.tgz "$url"; \
   tar -xzf /tmp/graalvm.tgz -C /root/tools; \
-  /root/tools/graalvm-ce-java17-linux-${GRAALVM_ARCH}-${GRAALVM_VERSION}/bin/gu install native-image; \
-  ln -s /root/tools/graalvm-ce-java17-linux-${GRAALVM_ARCH}-${GRAALVM_VERSION}/bin/native-image /usr/local/bin/native-image; \
+  /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/gu install native-image; \
+  ln -s /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/native-image /usr/local/bin/native-image; \
   echo "GraalVM ${GRAALVM_VERSION} installed successfully."
 
 # Remove old JAVA_HOME and GRAALVM_HOME from /etc/environment

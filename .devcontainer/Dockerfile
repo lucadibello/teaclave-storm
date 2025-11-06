@@ -32,10 +32,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
   GIT_EMAIL=${GIT_EMAIL} \
   STORM_HOME=/opt/storm \
   GRAALVM_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
-  JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
-  SGX_SDK=/opt/sgxsdk \
-  PKG_CONFIG_PATH=/opt/sgxsdk/pkgconfig:$PKG_CONFIG_PATH \
-  LD_LIBRARY_PATH=/opt/sgxsdk/sdk_libs:$LD_LIBRARY_PATH
+  JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION}
 
 # 0) Core setup
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -88,14 +85,14 @@ RUN set -eux; \
   install -d -m 0755 /etc/apt/keyrings; \
   curl -fsSL "https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key" -o /etc/apt/keyrings/intel-sgx-keyring.asc; \
   echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main' > /etc/apt/sources.list.d/intel-sgx.list; \
-  # curl -fsSL "https://occlum.io/occlum-package-repos/debian/public.key" -o /etc/apt/keyrings/occulum-keyring.asc; \
-  # echo 'deb [signed-by=/etc/apt/keyrings/occulum-keyring.asc arch=amd64] https://occlum.io/occlum-package-repos/debian noble main' > /etc/apt/sources.list.d/occulum.list; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
-  # occulum \
   libsgx-launch-dev \
   libsgx-urts \
+  libsgx-urts-dbgsym \
   libsgx-uae-service \
+  libsgx-enclave-common \
+  libsgx-enclave-common-dev \
   libsgx-dcap-ql \
   libsgx-dcap-ql-dev \
   libsgx-dcap-quote-verify-dev \
@@ -114,13 +111,24 @@ RUN set -eux; \
   /tmp/sgx_sdk.bin --prefix /opt; \
   rm -f /tmp/sgx_sdk.bin;
 
-# b) Install occulum from source
+# b) configure environment + build occulum
+ENV SGX_SDK=/opt/sgxsdk \
+    PATH=/opt/sgxsdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    PKG_CONFIG_PATH=/opt/sgxsdk/pkgconfig \
+    LD_LIBRARY_PATH=/opt/sgxsdk/lib64:/opt/sgxsdk/sdk_libs \
+    LIBRARY_PATH=/opt/sgxsdk/lib64:/opt/sgxsdk/sdk_libs \
+    CPATH=/opt/sgxsdk/include
+
+RUN printf '%s\n' /opt/sgxsdk/lib64 /opt/sgxsdk/sdk_libs \
+    > /etc/ld.so.conf.d/sgxsdk.conf && ldconfig
+
 RUN set -eux; \
-  git clone https://github.com/occlum/occlum /tmp/occlum-src; \
-  cd /tmp/occlum-src; \
-  OCCLUM_RELEASE_BUILD=1 make submodule; \
-  OCCLUM_RELEASE_BUILD=1 make; \
-  OCCLUM_RELEASE_BUILD=1 make install;
+  git clone https://github.com/occlum/occlum /tmp/occulum-src;
+#  cd /tmp/occulum-src;
+#  OCCLUM_RELEASE_BUILD=1 make submodule; \
+#  OCCLUM_RELEASE_BUILD=1 make; \
+#  OCCLUM_RELEASE_BUILD=1 make install; \
+#  rm -rf /tmp/occlum-src
 
 # Copy occulum DCAP libraries locally for remote attestation support
 # COPY --from=docker.io/occlum/occlum:0.31.0-ubuntu22.04 /opt/occlum/toolchains/dcap_lib /opt/occlum/toolchains/dcap_lib

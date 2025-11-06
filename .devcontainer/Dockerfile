@@ -32,12 +32,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
   GIT_EMAIL=${GIT_EMAIL} \
   STORM_HOME=/opt/storm \
   GRAALVM_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
-  JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION}
+  JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
+  SGX_SDK=/opt/sgxsdk \
+  PKG_CONFIG_PATH=/opt/sgxsdk/pkgconfig:$PKG_CONFIG_PATH \
+  LD_LIBRARY_PATH=/opt/sgxsdk/sdk_libs:$LD_LIBRARY_PATH
 
 # 0) Install base dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
   # Build & toolchain
-  autoconf automake build-essential cmake g++ gcc make zlib1g-dev python-is-python3 pkg-config \
+  autoconf automake build-essential cmake g++ gcc make ocaml ocamlbuild zlib1g-dev python-is-python3 pkg-config perl file \
   # VCS
   git \
   # Networking & crypto
@@ -49,7 +52,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   # Java
   openjdk-${OPENJDK_VERSION}-jdk \
   # SGX build prereqs
-  libssl-dev libcurl4-openssl-dev \
+  libssl-dev libtool \
   && rm -rf /var/lib/apt/lists/*
 
 # e) Create non-root user with passwordless sudo + matching UID/GID of host user
@@ -106,8 +109,6 @@ RUN set -eux; \
   sgx-aesm-service \
   && rm -rf /var/lib/apt/lists/*
 
-# NOTE: Do NOT try to enable/start services in a Docker build (no systemd). Start aesmd at runtime if needed.
-
 # 1) Install core components for development
 RUN mkdir -p /root/tools
 
@@ -123,9 +124,8 @@ RUN set -eux; \
   fi; \
   which ar as ld objcopy objdump ranlib; \
   make sdk; \
-  make sdk_install_pkg; \
-  make deb_psw_pkg; \
-  # Resolve the exact SDK installer filename
+  make sdk_install_pkg;
+RUN set -eux; \
   SDK_BIN="$(find linux/installer/bin -maxdepth 1 -type f -name 'sgx_linux_x64_sdk_*.bin' | head -n 1)"; \
   if [ -z "$SDK_BIN" ]; then echo "ERROR: Could not find SGX SDK installer binary!" >&2; exit 1; fi; \
   echo "Found SDK installer: $SDK_BIN"; \
@@ -135,7 +135,7 @@ RUN set -eux; \
   chmod +x /root/tools/sgx_sdk.bin; \
   echo "Intel SGX SDK installer copied."; \
   # Install SDK non-interactively
-  printf 'no\n/opt/sgxsdk\n' | /root/tools/sgx_sdk.bin; \
+  /root/tools/sgx_sdk.bin --prefix /opt/sgxsdk; \
   echo "Intel SGX SDK installed in /opt/sgxsdk"; \
   # cleanup
   rm -rf /tmp/linux-sgx
@@ -231,6 +231,16 @@ RUN mkdir -p /var/run/sshd \
   && sed -i 's/^#\?UsePAM .*/UsePAM yes/' /etc/ssh/sshd_config \
   && grep -qxF 'AllowTcpForwarding yes' /etc/ssh/sshd_config || echo 'AllowTcpForwarding yes' >> /etc/ssh/sshd_config \
   && grep -qxF 'X11Forwarding yes' /etc/ssh/sshd_config || echo 'X11Forwarding yes' >> /etc/ssh/sshd_config
+
+# g) Auto-source SGX SDK for interactive shells (bash & zsh)
+RUN set -eux; \
+  echo '[ -f /opt/sgxsdk/environment ] && . /opt/sgxsdk/environment' > /etc/profile.d/sgxsdk.sh; \
+  chmod 0644 /etc/profile.d/sgxsdk.sh; \
+  # zsh: source only for interactive shells
+  printf '%s\n' \
+    'if [[ -o interactive && -f /opt/sgxsdk/environment ]]; then' \
+    '  source /opt/sgxsdk/environment' \
+    'fi' >> /etc/zsh/zshrc
 
 EXPOSE 2222 6666
 WORKDIR /workspaces/teaclave-storm

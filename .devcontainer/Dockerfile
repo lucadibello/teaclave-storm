@@ -124,7 +124,7 @@ RUN set -eux; \
 
 # Remove old JAVA_HOME and GRAALVM_HOME from /etc/environment
 RUN sed -i '/^GRAALVM_HOME=/d' /etc/environment \
-  && sed -i '/^JAVA_HOME=/d' /etc/environment \
+  && sed -i '/^JAVA_HOME=/d' /etc/environment
 
 # Set OpenJDK 17 as default Java version using update-alternatives
 RUN update-alternatives --set java /usr/lib/jvm/java-17-openjdk-*/bin/java \

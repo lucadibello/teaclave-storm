@@ -29,24 +29,27 @@ class WordCountTopology extends ConfigurableTopology {
         LOG.info("Starting WordCountTopology in {} mode", isProd ? "PROD" : "LOCAL");
 
         // WordSpout: stream of phrases from a book
-        builder.setSpout("random-joke-spout", new RandomJokeSpout(), 2);
+        builder.setSpout("random-joke-spout", new RandomJokeSpout(), 1);
         // SplitSentenceBolt: splits each sentence into a stream of words
-        builder.setBolt("sentence-split", new SplitSentenceBolt(), 3).shuffleGrouping("random-joke-spout");
+        builder.setBolt("sentence-split", new SplitSentenceBolt(), 1).shuffleGrouping("random-joke-spout");
         // WordCountBolt: counts the words that are emitted
-        builder.setBolt("word-count", new WordCounterBolt(), 3).fieldsGrouping("sentence-split", new Fields("word"));
+        builder.setBolt("word-count", new WordCounterBolt(), 1).fieldsGrouping("sentence-split", new Fields("word"));
         // HistogramBolt: merges partial counters into a single (global) histogram
         builder.setBolt("histogram-global", new HistogramBolt(), 1).globalGrouping("word-count");
 
         // configure spout wait strategy to avoid starving other bolts
         // NOTE: learn more here https://storm.apache.org/releases/current/Performance.html
-        conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_STRATEGY,
-                "org.apache.storm.policy.WaitStrategyProgressive");
-        conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL1_COUNT, 1); // wait after 1 consecutive empty emit
-        conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL2_COUNT, 100); // wait after 100 consecutive empty emits
-        conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL3_SLEEP_MILLIS, 1);
+        // conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_STRATEGY, "org.apache.storm.policy.WaitStrategyProgressive");
+        // conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL1_COUNT, 1); // wait after 1 consecutive empty emit
+        // conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL2_COUNT, 100); // wait after 100 consecutive empty emits
+        // conf.put(Config.TOPOLOGY_BACKPRESSURE_WAIT_PROGRESSIVE_LEVEL3_SLEEP_MILLIS, 1);
 
         // run the topology (locally if not production, otherwise submit to nimbus)
         conf.setDebug(false);
+        if (!isProd) {
+            conf.put("confidentialstorm.enclave.type", "MOCK_IN_SVM");
+            // conf.put("confidentialstorm.enclave.type", "TEE_SDK");
+        }
         if (!isProd) {
             // submit topology
             LOG.warn("Running in local mode");

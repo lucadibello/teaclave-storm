@@ -25,6 +25,7 @@ public class SplitSentenceBolt extends ConfidentialBolt<SplitSentenceService> {
     protected void afterPrepare(Map<String, Object> topoConf, TopologyContext context) {
         super.afterPrepare(topoConf, context);
         this.boltId = context.getThisTaskId();
+        LOG.info("[SplitSentenceBolt {}] Prepared with componentId {}", boltId, context.getThisComponentId());
     }
 
     @Override

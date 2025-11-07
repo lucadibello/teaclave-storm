@@ -1,6 +1,12 @@
 package ch.usi.inf.confidentialstorm.common.model;
 
-public record HistogramUpdate(String word, long count) {
+import java.io.Serial;
+import java.io.Serializable;
+
+public record HistogramUpdate(String word, long count) implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     public HistogramUpdate {
         if (word == null || word.isBlank()) {
             throw new IllegalArgumentException("Word cannot be null or blank");

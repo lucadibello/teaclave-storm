@@ -5,6 +5,7 @@ import ch.usi.inf.confidentialstorm.common.model.HistogramUpdate;
 import ch.usi.inf.confidentialstorm.host.bolts.base.ConfidentialBolt;
 import org.apache.storm.Config;
 import org.apache.storm.Constants;
+import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
@@ -30,9 +31,10 @@ public class HistogramBolt extends ConfidentialBolt<HistogramService> {
     }
 
     @Override
-    protected void afterPrepare(Map<String, Object> topoConf, org.apache.storm.task.TopologyContext context) {
+    protected void afterPrepare(Map<String, Object> topoConf, TopologyContext context) {
         super.afterPrepare(topoConf, context);
         this.io = Executors.newSingleThreadExecutor();
+        LOG.info("[HistogramBolt {}] Prepared. Snapshot output: {}", context.getThisTaskId(), OUTPUT_FILE);
     }
 
     @Override

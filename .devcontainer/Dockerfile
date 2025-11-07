@@ -24,98 +24,98 @@ ARG APACHE_MIRROR=https://dlcdn.apache.org/storm
 ARG MAVEN_VERSION=3.9.11
 
 ENV DEBIAN_FRONTEND=noninteractive \
-  NVIM_LISTEN_ADDRESS=127.0.0.1:6666 \
-  DEVCONTAINER_USER=${REMOTE_USER} \
-  REMOTE_USER=${REMOTE_USER} \
-  REMOTE_HOME=${REMOTE_HOME} \
-  GIT_NAME=${GIT_NAME} \
-  GIT_EMAIL=${GIT_EMAIL} \
-  STORM_HOME=/opt/storm \
-  GRAALVM_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
-  JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION}
+    NVIM_LISTEN_ADDRESS=127.0.0.1:6666 \
+    DEVCONTAINER_USER=${REMOTE_USER} \
+    REMOTE_USER=${REMOTE_USER} \
+    REMOTE_HOME=${REMOTE_HOME} \
+    GIT_NAME=${GIT_NAME} \
+    GIT_EMAIL=${GIT_EMAIL} \
+    STORM_HOME=/opt/storm \
+    GRAALVM_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION} \
+    JAVA_HOME=/root/tools/graalvm-ce-java17-${GRAALVM_VERSION}
 
 # 0) Core setup
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  autoconf automake build-essential cmake g++ gcc make ocaml ocamlbuild zlib1g-dev python-is-python3 pkg-config perl file maven \
-  git \
-  ca-certificates curl openssh-client openssh-server openssl wget gnupg jq \
-  tar unzip xz-utils \
-  sudo tmux zsh \
-  openjdk-${OPENJDK_VERSION}-jdk \
-  libssl-dev libtool \
-  && rm -rf /var/lib/apt/lists/*
+    autoconf automake build-essential cmake g++ gcc make ocaml ocamlbuild zlib1g-dev python-is-python3 pkg-config perl file maven \
+    git \
+    ca-certificates curl openssh-client openssh-server openssl wget gnupg jq \
+    tar unzip xz-utils \
+    sudo tmux zsh \
+    openjdk-${OPENJDK_VERSION}-jdk \
+    libssl-dev libtool \
+    && rm -rf /var/lib/apt/lists/*
 
 # a) Create non-root user with passwordless sudo + matching UID/GID of host user
 RUN GROUP_NAME="${REMOTE_GROUP}" \
-  && EXISTING_GID_GROUP="$(getent group "${REMOTE_GID}" | cut -d: -f1 || true)" \
-  && if [ -n "${EXISTING_GID_GROUP}" ]; then \
-  GROUP_NAME="${EXISTING_GID_GROUP}"; \
-  elif getent group "${REMOTE_GROUP}" >/dev/null; then \
-  groupmod --gid "${REMOTE_GID}" "${REMOTE_GROUP}"; \
-  else \
-  groupadd --gid "${REMOTE_GID}" "${REMOTE_GROUP}"; \
-  fi \
-  && EXISTING_UID_USER="$(getent passwd "${REMOTE_UID}" | cut -d: -f1 || true)" \
-  && if ! id -u "${REMOTE_USER}" >/dev/null 2>&1 \
-  && [ -n "${EXISTING_UID_USER}" ] \
-  && [ "${EXISTING_UID_USER}" != "${REMOTE_USER}" ]; then \
-  usermod --login "${REMOTE_USER}" "${EXISTING_UID_USER}"; \
-  fi \
-  && if id -u "${REMOTE_USER}" >/dev/null 2>&1; then \
-  usermod --gid "${GROUP_NAME}" --shell /usr/bin/zsh "${REMOTE_USER}"; \
-  CURRENT_UID="$(id -u "${REMOTE_USER}")"; \
-  if [ "${CURRENT_UID}" -ne "${REMOTE_UID}" ] \
-  && { [ -z "${EXISTING_UID_USER}" ] || [ "${EXISTING_UID_USER}" = "${REMOTE_USER}" ]; }; then \
-  usermod --uid "${REMOTE_UID}" "${REMOTE_USER}"; \
-  fi; \
-  CURRENT_HOME="$(getent passwd "${REMOTE_USER}" | cut -d: -f6)"; \
-  if [ "${CURRENT_HOME}" != "${REMOTE_HOME}" ]; then \
-  usermod --home "${REMOTE_HOME}" --move-home "${REMOTE_USER}"; \
-  fi; \
-  else \
-  useradd --create-home --shell /usr/bin/zsh --uid "${REMOTE_UID}" --gid "${GROUP_NAME}" "${REMOTE_USER}"; \
-  fi \
-  && usermod -aG sudo "${REMOTE_USER}" \
-  && echo "${REMOTE_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-"${REMOTE_USER}" \
-  && chmod 0440 /etc/sudoers.d/90-"${REMOTE_USER}" \
-  && echo "${GROUP_NAME}" > /etc/devcontainer-group
+    && EXISTING_GID_GROUP="$(getent group "${REMOTE_GID}" | cut -d: -f1 || true)" \
+    && if [ -n "${EXISTING_GID_GROUP}" ]; then \
+    GROUP_NAME="${EXISTING_GID_GROUP}"; \
+    elif getent group "${REMOTE_GROUP}" >/dev/null; then \
+    groupmod --gid "${REMOTE_GID}" "${REMOTE_GROUP}"; \
+    else \
+    groupadd --gid "${REMOTE_GID}" "${REMOTE_GROUP}"; \
+    fi \
+    && EXISTING_UID_USER="$(getent passwd "${REMOTE_UID}" | cut -d: -f1 || true)" \
+    && if ! id -u "${REMOTE_USER}" >/dev/null 2>&1 \
+    && [ -n "${EXISTING_UID_USER}" ] \
+    && [ "${EXISTING_UID_USER}" != "${REMOTE_USER}" ]; then \
+    usermod --login "${REMOTE_USER}" "${EXISTING_UID_USER}"; \
+    fi \
+    && if id -u "${REMOTE_USER}" >/dev/null 2>&1; then \
+    usermod --gid "${GROUP_NAME}" --shell /usr/bin/zsh "${REMOTE_USER}"; \
+    CURRENT_UID="$(id -u "${REMOTE_USER}")"; \
+    if [ "${CURRENT_UID}" -ne "${REMOTE_UID}" ] \
+    && { [ -z "${EXISTING_UID_USER}" ] || [ "${EXISTING_UID_USER}" = "${REMOTE_USER}" ]; }; then \
+    usermod --uid "${REMOTE_UID}" "${REMOTE_USER}"; \
+    fi; \
+    CURRENT_HOME="$(getent passwd "${REMOTE_USER}" | cut -d: -f6)"; \
+    if [ "${CURRENT_HOME}" != "${REMOTE_HOME}" ]; then \
+    usermod --home "${REMOTE_HOME}" --move-home "${REMOTE_USER}"; \
+    fi; \
+    else \
+    useradd --create-home --shell /usr/bin/zsh --uid "${REMOTE_UID}" --gid "${GROUP_NAME}" "${REMOTE_USER}"; \
+    fi \
+    && usermod -aG sudo "${REMOTE_USER}" \
+    && echo "${REMOTE_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-"${REMOTE_USER}" \
+    && chmod 0440 /etc/sudoers.d/90-"${REMOTE_USER}" \
+    && echo "${GROUP_NAME}" > /etc/devcontainer-group
 
 # b) Intel SGX runtime libs from Intel apt repo (noble)
 RUN set -eux; \
-  install -d -m 0755 /etc/apt/keyrings; \
-  curl -fsSL "https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key" -o /etc/apt/keyrings/intel-sgx-keyring.asc; \
-  echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main' > /etc/apt/sources.list.d/intel-sgx.list; \
-  apt-get update; \
-  apt-get install -y --no-install-recommends \
-  libsgx-launch-dev \
-  libsgx-urts \
-  libsgx-urts-dbgsym \
-  libsgx-uae-service \
-  libsgx-enclave-common \
-  libsgx-enclave-common-dev \
-  libsgx-dcap-ql \
-  libsgx-dcap-ql-dev \
-  libsgx-dcap-quote-verify-dev \
-  libsgx-dcap-default-qpl \
-  && rm -rf /var/lib/apt/lists/*
+    install -d -m 0755 /etc/apt/keyrings; \
+    curl -fsSL "https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key" -o /etc/apt/keyrings/intel-sgx-keyring.asc; \
+    echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main' > /etc/apt/sources.list.d/intel-sgx.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    libsgx-launch-dev \
+    libsgx-urts \
+    libsgx-urts-dbgsym \
+    libsgx-uae-service \
+    libsgx-enclave-common \
+    libsgx-enclave-common-dev \
+    libsgx-dcap-ql \
+    libsgx-dcap-ql-dev \
+    libsgx-dcap-quote-verify-dev \
+    libsgx-dcap-default-qpl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 1) Install core components for development
 RUN mkdir -p /root/tools
 
 # a) Intel SGX SDK (.bin installer)
 RUN set -eux; \
-  url="https://download.01.org/intel-sgx/sgx-linux/2.26/distro/ubuntu24.04-server/sgx_linux_x64_sdk_2.26.100.0.bin"; \
-  curl -fsSL -o /tmp/sgx_sdk.bin "$url"; \
-  chmod +x /tmp/sgx_sdk.bin; \
-  mkdir -p /opt/teesdk; \
-  /tmp/sgx_sdk.bin --prefix /opt/teesdk; \
-  rm -f /tmp/sgx_sdk.bin;
+    url="https://download.01.org/intel-sgx/sgx-linux/2.26/distro/ubuntu24.04-server/sgx_linux_x64_sdk_2.26.100.0.bin"; \
+    curl -fsSL -o /tmp/sgx_sdk.bin "$url"; \
+    chmod +x /tmp/sgx_sdk.bin; \
+    mkdir -p /opt/teesdk; \
+    /tmp/sgx_sdk.bin --prefix /opt/teesdk; \
+    rm -f /tmp/sgx_sdk.bin;
 
 # b) configure environment (avoid sourcing environment file)
 ENV SGX_SDK=/opt/teesdk/sgxsdk \
-  PATH=$PATH:$SGX_SDK/bin:$SGX_SDK/bin/x64 \
-  PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SGX_SDK/pkgconfig \
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SGX_SDK/sdk_libs
+    PATH=$PATH:$SGX_SDK/bin:$SGX_SDK/bin/x64 \
+    PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SGX_SDK/pkgconfig \
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SGX_SDK/sdk_libs
 
 RUN printf '%s\n' /opt/teesdk/sgxsdk/sdk_libs > /etc/ld.so.conf.d/sgxsdk.conf && ldconfig
 
@@ -128,18 +128,6 @@ RUN printf '%s\n' /opt/teesdk/sgxsdk/sdk_libs > /etc/ld.so.conf.d/sgxsdk.conf &&
 #  OCCLUM_RELEASE_BUILD=1 make; \
 #  OCCLUM_RELEASE_BUILD=1 make install; \
 #  rm -rf /tmp/occlum-src
-
-# b) Install teaclave release v0.1.0 to /opt/javaenclave
-RUN set -eux; \
-    url="https://github.com/apache/teaclave-java-tee-sdk/archive/refs/tags/v0.1.0.tar.gz"; \
-    curl -fsSL -o /tmp/javanenclave.tgz "$url"; \
-    tar -xzf /tmp/javanenclave.tgz -C /tmp; \
-    mvn install:install-file -DgroupId=org.graalvm.compiler -DartifactId=graal-processor -Dversion=22.2.0 -Dpackaging=jar -Dfile="${GRAALVM_HOME}/lib/graal/graal-processor.jar"; \
-#    mvn -f /tmp/teaclave-java-tee-sdk-0.1.0/sdk/pom.xml clean install; \
-#    mvn -f /tmp/teaclave-java-tee-sdk-0.1.0/third-party-libs/bouncycastle-native/pom.xml clean install; \
-    cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/bin /opt/javaenclave; \
-    cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/config /opt/javaenclave; \
-    cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/script/build_app /opt/javaenclave
 
 #   mkdir -p /opt/javaenclave/jar/sdk; \
 #   mkdir -p /opt/javaenclave/jar/sdk/host; \
@@ -155,60 +143,73 @@ RUN set -eux; \
 # Copy occulum DCAP libraries locally for remote attestation support
 # COPY --from=docker.io/occlum/occlum:0.31.0-ubuntu22.04 /opt/occlum/toolchains/dcap_lib /opt/occlum/toolchains/dcap_lib
 
-# c) GraalVM (Java 17) + native-image
+# b) GraalVM (Java 17) + native-image
 RUN set -eux; \
-  url="https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${GRAALVM_VERSION}/graalvm-ce-java17-linux-${GRAALVM_ARCH}-${GRAALVM_VERSION}.tar.gz"; \
-  curl -fsSL -o /tmp/graalvm.tgz "$url"; \
-  tar -xzf /tmp/graalvm.tgz -C /root/tools; \
-  /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/gu install native-image; \
-  ln -sf /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/native-image /usr/local/bin/native-image; \
-  rm -f /tmp/graalvm.tgz; \
-  echo "GraalVM ${GRAALVM_VERSION} installed successfully."
+    url="https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${GRAALVM_VERSION}/graalvm-ce-java17-linux-${GRAALVM_ARCH}-${GRAALVM_VERSION}.tar.gz"; \
+    curl -fsSL -o /tmp/graalvm.tgz "$url"; \
+    tar -xzf /tmp/graalvm.tgz -C /root/tools; \
+    /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/gu install native-image; \
+    ln -sf /root/tools/graalvm-ce-java17-${GRAALVM_VERSION}/bin/native-image /usr/local/bin/native-image; \
+    rm -f /tmp/graalvm.tgz; \
+    echo "GraalVM ${GRAALVM_VERSION} installed successfully."
+
+# c) Install teaclave release v0.1.0 to /opt/javaenclave
+COPY --from=docker.io/teaclave/teaclave-java-tee-sdk:v0.1.0-ubuntu18.04 /opt/javaenclave /opt/javaenclave
+# RUN set -eux; \
+#     url="https://github.com/apache/teaclave-java-tee-sdk/archive/refs/tags/v0.1.0.tar.gz"; \
+#     curl -fsSL -o /tmp/javanenclave.tgz "$url"; \
+#     tar -xzf /tmp/javanenclave.tgz -C /tmp; \
+#     mvn install:install-file -DgroupId=org.graalvm.compiler -DartifactId=graal-processor -Dversion=22.2.0 -Dpackaging=jar -Dfile="${GRAALVM_HOME}/lib/graal/graal-processor.jar"; \
+#     mvn -f /tmp/teaclave-java-tee-sdk-0.1.0/sdk/pom.xml clean install; \
+#     mvn -f /tmp/teaclave-java-tee-sdk-0.1.0/third-party-libs/bouncycastle-native/pom.xml clean install; \
+#     cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/bin /opt/javaenclave; \
+#     cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/config /opt/javaenclave; \
+#     cp -r /tmp/teaclave-java-tee-sdk-0.1.0/sdk/native/script/build_app /opt/javaenclave
 
 # 2) Additional tools
 
 # a) ripgrep
 RUN set -eux; \
-  curl -fsSL https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb -o /tmp/ripgrep.deb; \
-  dpkg -i /tmp/ripgrep.deb || apt-get -y --no-install-recommends -f install; \
-  rm -f /tmp/ripgrep.deb
+    curl -fsSL https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb -o /tmp/ripgrep.deb; \
+    dpkg -i /tmp/ripgrep.deb || apt-get -y --no-install-recommends -f install; \
+    rm -f /tmp/ripgrep.deb
 
 # b) Lazygit
 RUN set -eux; \
-  LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*'); \
-  curl -fsSL -o /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; \
-  tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
-  install /tmp/lazygit -D -t /usr/local/bin/; \
-  rm -f /tmp/lazygit /tmp/lazygit.tar.gz; \
-  echo "LazyGit installed successfully."
+    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*'); \
+    curl -fsSL -o /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; \
+    tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
+    install /tmp/lazygit -D -t /usr/local/bin/; \
+    rm -f /tmp/lazygit /tmp/lazygit.tar.gz; \
+    echo "LazyGit installed successfully."
 
 # c) Node.js
 RUN set -eux; \
-  curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
-  tar -xf "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
-  mv "node-v${NODE_VERSION}-linux-${NODE_ARCH}" /usr/local/node-v${NODE_VERSION}; \
-  ln -sf /usr/local/node-v${NODE_VERSION}/bin/node /usr/local/bin/node; \
-  ln -sf /usr/local/node-v${NODE_VERSION}/bin/npm /usr/local/bin/npm; \
-  ln -sf /usr/local/node-v${NODE_VERSION}/bin/npx /usr/local/bin/npx; \
-  node -v; npm -v; \
-  rm -f "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
-  echo "Node.js installed successfully."
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    tar -xf "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    mv "node-v${NODE_VERSION}-linux-${NODE_ARCH}" /usr/local/node-v${NODE_VERSION}; \
+    ln -sf /usr/local/node-v${NODE_VERSION}/bin/node /usr/local/bin/node; \
+    ln -sf /usr/local/node-v${NODE_VERSION}/bin/npm /usr/local/bin/npm; \
+    ln -sf /usr/local/node-v${NODE_VERSION}/bin/npx /usr/local/bin/npx; \
+    node -v; npm -v; \
+    rm -f "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    echo "Node.js installed successfully."
 
 # d) Neovim
 RUN set -eux; \
-  curl -fsSL "https://github.com/neovim/neovim-releases/releases/download/v${NEOVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o /tmp/nvim.tar.gz; \
-  tar -xf /tmp/nvim.tar.gz -C /opt; \
-  rm /tmp/nvim.tar.gz; \
-  mv /opt/nvim-linux-x86_64 /opt/nvim; \
-  ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
+    curl -fsSL "https://github.com/neovim/neovim-releases/releases/download/v${NEOVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o /tmp/nvim.tar.gz; \
+    tar -xf /tmp/nvim.tar.gz -C /opt; \
+    rm /tmp/nvim.tar.gz; \
+    mv /opt/nvim-linux-x86_64 /opt/nvim; \
+    ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
 
 # e) Apache Storm CLI (fixed extraction path)
 RUN set -eux; \
-  curl -fsSL "${APACHE_MIRROR}/apache-storm-${STORM_VERSION}/apache-storm-${STORM_VERSION}.tar.gz" -o /tmp/storm.tgz; \
-  tar -xzf /tmp/storm.tgz -C /opt; \
-  rm -f /tmp/storm.tgz; \
-  ln -s "/opt/apache-storm-${STORM_VERSION}" "${STORM_HOME}"; \
-  ln -sf "${STORM_HOME}/bin/storm" /usr/local/bin/storm
+    curl -fsSL "${APACHE_MIRROR}/apache-storm-${STORM_VERSION}/apache-storm-${STORM_VERSION}.tar.gz" -o /tmp/storm.tgz; \
+    tar -xzf /tmp/storm.tgz -C /opt; \
+    rm -f /tmp/storm.tgz; \
+    ln -s "/opt/apache-storm-${STORM_VERSION}" "${STORM_HOME}"; \
+    ln -sf "${STORM_HOME}/bin/storm" /usr/local/bin/storm
 
 # f) Oh My Zsh for the remote user
 RUN su - "${REMOTE_USER}" -c 'export RUNZSH=no CHSH=no; sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"'
@@ -217,7 +218,7 @@ RUN su - "${REMOTE_USER}" -c 'export RUNZSH=no CHSH=no; sh -c "$(curl -fsSL http
 
 # a) Make OpenJDK 17 the default javac/java (you still use GraalVM for native-image)
 RUN update-alternatives --set java /usr/lib/jvm/java-17-openjdk-*/bin/java \
-  && update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-*/bin/javac
+    && update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-*/bin/javac
 
 # b) Devcontainer entrypoint
 COPY .devcontainer/devcontainer-entrypoint.sh /usr/local/bin/devcontainer-entrypoint
@@ -225,24 +226,24 @@ RUN chmod +x /usr/local/bin/devcontainer-entrypoint
 
 # c) Minimal Storm client config
 RUN mkdir -p /home/${REMOTE_USER}/.storm \
-  && echo 'nimbus.seeds: ["nimbus"]' > /home/${REMOTE_USER}/.storm/storm.yaml \
-  && chown -R ${REMOTE_USER}:${REMOTE_GROUP} /home/${REMOTE_USER}/.storm
+    && echo 'nimbus.seeds: ["nimbus"]' > /home/${REMOTE_USER}/.storm/storm.yaml \
+    && chown -R ${REMOTE_USER}:${REMOTE_GROUP} /home/${REMOTE_USER}/.storm
 
 # d) Ensure cache dir for Neovim logs
 RUN TARGET_GROUP="$(cat /etc/devcontainer-group 2>/dev/null || echo "${REMOTE_GROUP}")" \
-  && mkdir -p "${REMOTE_HOME}"/.cache \
-  && chown "${REMOTE_USER}:${TARGET_GROUP}" "${REMOTE_HOME}"/.cache
+    && mkdir -p "${REMOTE_HOME}"/.cache \
+    && chown "${REMOTE_USER}:${TARGET_GROUP}" "${REMOTE_HOME}"/.cache
 
 # f) SSH server configuration
 RUN mkdir -p /var/run/sshd \
-  && ssh-keygen -A \
-  && sed -i 's/^#\?Port .*/Port 2222/' /etc/ssh/sshd_config \
-  && sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config \
-  && sed -i 's/^#\?PubkeyAuthentication .*/PubkeyAuthentication no/' /etc/ssh/sshd_config \
-  && sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config \
-  && sed -i 's/^#\?UsePAM .*/UsePAM yes/' /etc/ssh/sshd_config \
-  && grep -qxF 'AllowTcpForwarding yes' /etc/ssh/sshd_config || echo 'AllowTcpForwarding yes' >> /etc/ssh/sshd_config \
-  && grep -qxF 'X11Forwarding yes' /etc/ssh/sshd_config || echo 'X11Forwarding yes' >> /etc/ssh/sshd_config
+    && ssh-keygen -A \
+    && sed -i 's/^#\?Port .*/Port 2222/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PubkeyAuthentication .*/PubkeyAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?UsePAM .*/UsePAM yes/' /etc/ssh/sshd_config \
+    && grep -qxF 'AllowTcpForwarding yes' /etc/ssh/sshd_config || echo 'AllowTcpForwarding yes' >> /etc/ssh/sshd_config \
+    && grep -qxF 'X11Forwarding yes' /etc/ssh/sshd_config || echo 'X11Forwarding yes' >> /etc/ssh/sshd_config
 
 # FINALLY - ensure user owns tools / libs
 RUN chown -R "${REMOTE_USER}:${REMOTE_GROUP}" /root

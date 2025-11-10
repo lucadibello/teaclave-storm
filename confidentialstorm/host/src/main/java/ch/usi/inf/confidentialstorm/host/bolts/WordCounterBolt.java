@@ -31,7 +31,6 @@ public class WordCounterBolt extends ConfidentialBolt<WordCountService> {
     @Override
     protected void processTuple(Tuple input, WordCountService service) {
         String word = input.getStringByField("word");
-        LOG.info("[WordCounterBolt {}] Received word: {}", boltId, word);
         long count = service.count(new WordCountRequest(word)).count();
         collector.emit(input, new Values(word, count));
         collector.ack(input);

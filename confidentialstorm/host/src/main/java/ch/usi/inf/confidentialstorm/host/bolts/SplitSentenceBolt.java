@@ -32,11 +32,9 @@ public class SplitSentenceBolt extends ConfidentialBolt<SplitSentenceService> {
     @Override
     protected void processTuple(Tuple input, SplitSentenceService service) {
         String jokeBody = input.getStringByField("body");
-        LOG.info("[SplitSentenceBolt {}]: Received sentence: {}", boltId, jokeBody.substring(0, Math.min(50, jokeBody.length())) + (jokeBody.length() > 50 ? "..." : ""));
-        // build request to be sent to the enclave
+        // request enclave to split the sentence
         SplitSentenceResponse response = service.split(new SplitSentenceRequest(jokeBody));
-
-        LOG.info("[SplitSentenceBolt {}]: Found {} words in sentence.", boltId, response.words().size());
+        LOG.info("[SplitSentenceBolt {}]: Found {} words in sentence {}", boltId, response.words().size(), jokeBody.substring(0, Math.min(50, jokeBody.length())) + (jokeBody.length() > 50 ? "..." : ""));
 
         // print each word found, each on the same line joined by a comma
         StringBuilder wordsStr = new StringBuilder();

@@ -1,7 +1,8 @@
 package ch.usi.inf.confidentialstorm.host.bolts;
 
 import ch.usi.inf.confidentialstorm.common.api.HistogramService;
-import ch.usi.inf.confidentialstorm.common.model.HistogramUpdate;
+import ch.usi.inf.confidentialstorm.common.model.HistogramSnapshotResponse;
+import ch.usi.inf.confidentialstorm.common.model.HistogramUpdateRequest;
 import ch.usi.inf.confidentialstorm.host.bolts.base.ConfidentialBolt;
 import org.apache.storm.Config;
 import org.apache.storm.Constants;
@@ -84,20 +85,29 @@ public class HistogramBolt extends ConfidentialBolt<HistogramService> {
 
     @Override
     protected void processTuple(Tuple input, HistogramService service) {
+        // if tick tuple -> export histogram to file
         if (isTickTuple(input)) {
-            var snapshot = service.snapshot();
-            LOG.info("[HistogramBolt] Received tick tuple. Exporting histogram snapshot with {} entries.", snapshot.counts().size());
+            LOG.info("[HistogramBolt] Received tick tuple. Exporting histogram snapshot...");
+            HistogramSnapshotResponse snapshot = service.snapshot();
+
             Map<String, Long> snap = snapshot.counts();
             if (io != null) {
                 io.submit(() -> writeSnapshot(snap));
             } else {
+                // export snapshot to file
                 writeSnapshot(snap);
             }
+            LOG.info("[HistogramBolt] Received tick tuple. Exporting histogram snapshot with {} entries.", snapshot.counts().size());
             return;
         }
+
+        // in any case -> update the histogram with the new values
         String word = input.getStringByField("word");
         Long newCount = input.getLongByField("count");
-        service.update(new HistogramUpdate(word, newCount));
+        LOG.info("[HistogramBolt] Updating histogram with new count: {} -> {}", word, newCount);
+        service.update(new HistogramUpdateRequest(word, newCount));
+
+        // acknowledge the tuple
         collector.ack(input);
     }
 
